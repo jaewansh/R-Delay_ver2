@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>R-Delay 배차 브리핑</title>
+  <meta name="description" content="부산신항 지연이 번지기 전에 오늘 화물의 출발 시각과 화주·기사 안내문을 정해 주는 배차 담당자 화면(시연용 가상 데이터).">
+  <meta name="theme-color" content="#0e2238">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/img/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/img/icon-192.png">
+  <link rel="preload" href="assets/fonts/PretendardVariable.subset.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/css/board.css?v=20261107a">
+  <script type="module" src="assets/js/board.js?v=20261107a"></script>
+</head>
+<body>
+<header class="bar">
+  <div class="bar-in">
+    <a class="logo" href="./" aria-label="R-Delay 처음 화면">
+      <svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#2a78d6"/><path d="M10 44 C22 44 24 20 36 20 S50 32 54 32" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/><circle cx="36" cy="20" r="5" fill="#fff"/><circle cx="54" cy="32" r="4" fill="#fff"/></svg>
+      <span class="logo-word">R-Delay</span><span class="logo-sub">배차 브리핑</span>
+    </a>
+    <label class="scn"><span>시연 상황</span><select id="scn" aria-label="시연 상황 고르기"></select></label>
+    <p class="asof"><span>판단 <b id="asof">10:00</b></span><span class="next">다음 계산 <b id="next">12:00</b></span></p>
+    <span class="tag-demo" title="화면의 수치는 공개 보도 사건 유형을 본뜬 합성 자료로 계산했습니다. 특정 터미널·기업의 자료나 판정이 아닙니다.">가상 데이터</span>
+    <button type="button" class="btn-install" id="install" hidden>앱으로 설치</button>
+    <a class="bar-link" href="analysis.html">분석 화면</a>
+    <a class="bar-link" href="method.html">작동 원리</a>
+  </div>
+</header>
+
+<section class="ribbon" id="ribbon" data-level="good" aria-labelledby="rb-title">
+  <div class="rb-in">
+    <div>
+      <h1 class="rb-title" id="rb-title"><span class="shape" data-s="dot" aria-hidden="true"></span><span id="rb-title-text">불러오는 중</span></h1>
+      <p class="rb-sub" id="rb-sub"></p>
+    </div>
+    <ol class="chain" id="chain" aria-label="해상·육상·항공 거점 상태"></ol>
+    <div class="rb-index">
+      <p class="rd" id="rd"><span class="rd-v num" id="rd-v">–</span><span class="rd-l">번짐 지수</span><span class="rd-gauge" aria-hidden="true"><i id="rd-i"></i></span></p>
+      <button type="button" class="btn" id="why-btn">근거 보기</button>
+    </div>
+    <dl class="rb-facts" id="rb-facts"></dl>
+  </div>
+</section>
+
+<main class="work">
+  <section class="board" aria-labelledby="board-h">
+    <header class="board-head">
+      <h2 id="board-h">오늘 화물 <span id="n">0</span>건</h2>
+      <p class="counts" id="counts"></p>
+      <p class="board-hint">줄을 누르면 오른쪽에 안내문이 만들어집니다</p>
+    </header>
+    <div class="axis grid3" aria-hidden="true"><span></span><div class="axis-track" id="axis"></div><span></span></div>
+    <ol class="rows" id="rows" aria-label="오늘 화물"></ol>
+    <p class="legend" aria-hidden="true">
+      <span><i class="lg lg-plan"></i>지금 계획</span><span><i class="lg lg-rec"></i>추천 시각</span>
+      <span><i class="lg lg-band"></i>도착 예상(보통~늦으면)</span><span><i class="lg lg-ready"></i>컨테이너 반출 예상</span>
+      <span><i class="lg lg-closed"></i>반입 금지(공지)</span><span><i class="lg lg-dl"></i>마감</span>
+    </p>
+  </section>
+
+  <aside class="brief" aria-labelledby="brief-h">
+    <header class="brief-head">
+      <h2 id="brief-h">브리핑</h2>
+      <p class="brief-for" id="brief-for"></p>
+      <button type="button" class="btn-quiet" id="sender-btn">보내는 사람 바꾸기</button>
+    </header>
+    <div class="tabs" role="tablist" aria-label="문서 종류" id="tabs"></div>
+    <article class="paper" id="paper" role="tabpanel" aria-live="polite" tabindex="0" contenteditable="true" spellcheck="false"></article>
+    <p class="edit-hint">문서를 눌러 바로 고칠 수 있습니다. 복사하면 고친 내용이 그대로 복사됩니다.</p>
+    <div class="brief-actions">
+      <button type="button" class="btn-primary" id="copy">복사</button>
+      <button type="button" class="btn" id="share">공유</button>
+      <button type="button" class="btn" id="print">인쇄·PDF</button>
+      <button type="button" class="btn" id="save">텍스트 저장</button>
+    </div>
+  </aside>
+</main>
+
+<footer class="foot">
+  <p>R-Delay v2.0 · 2026 동남권 멀티도메인 모빌리티 비즈니스 해커톤(개인부문) 출품작 · MIT License · <a href="https://github.com/jaewansh/R-Delay_ver2">GitHub</a> · <a href="https://github.com/jaewansh/R-Delay_ver2/blob/main/REPORT.md#검증-실제-공개-자료-백테스트">실자료 검증 결과(기술 보고서)</a></p>
+  <p>모든 수치는 시연용 합성 자료로 계산한 예시이며 특정 터미널·기업의 자료나 판정이 아닙니다. 배차·안내의 최종 판단은 담당자가 합니다. 원인 판정은 모형상 배분이며 책임 소재 판단에 쓰지 않습니다.</p>
+  <p>계산은 이 기기 안에서 하며 입력값을 어디에도 보내지 않습니다. 한 번 열면 인터넷 없이도 열립니다.</p>
+</footer>
+
+<dialog class="sheet" id="why" aria-labelledby="why-h">
+  <div class="sheet-in">
+    <div class="sheet-head"><h2 id="why-h">근거</h2><button type="button" class="btn" data-close>닫기</button></div>
+    <p id="why-lead"></p>
+    <h3>무엇을 되돌리면 번짐이 멈추나</h3>
+    <p>번짐 지수는 지연 1건이 풀리기 전에 새 지연을 평균 몇 건 만드는지입니다. 1보다 크면 지연이 스스로 불어납니다.</p>
+    <div class="cf" id="cf"></div>
+    <h3>번짐 지수 — 지난 24시간과 앞으로 24시간</h3>
+    <svg class="spark" id="spark" viewBox="0 0 520 150" role="img" aria-label="번짐 지수 추이"></svg>
+    <h3>얼마나 믿을 수 있나</h3>
+    <ul class="trust" id="trust"></ul>
+    <p><a href="method.html">작동 원리·검증 전체</a> · <a href="analysis.html" id="why-analysis">분석 화면에서 이 장면 보기</a> · <a href="https://github.com/jaewansh/R-Delay_ver2/blob/main/REPORT.md#검증-실제-공개-자료-백테스트">실자료 검증 결과(기술 보고서)</a></p>
+  </div>
+</dialog>
+
+<dialog class="dlg-small" id="sender" aria-labelledby="sender-h">
+  <form method="dialog" id="sender-form">
+    <h2 id="sender-h" style="margin:0;font-size:18px">보내는 사람</h2>
+    <label>회사 이름<input name="company" autocomplete="organization"></label>
+    <label>담당자<input name="name" autocomplete="name"></label>
+    <label>연락처<input name="phone" autocomplete="tel" inputmode="tel"></label>
+    <div class="dlg-actions"><button class="btn" value="cancel" type="submit">취소</button><button class="btn-primary" value="ok" type="submit">저장</button></div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

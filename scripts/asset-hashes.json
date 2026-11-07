@@ -1,0 +1,18 @@
+{
+  "V": "20261107a",
+  "files": {
+    "docs/assets/css/board.css": "339da7bd34e8fc82481a7ce39556e0509d8cccbbbc3bb419f9e3dfd39eb02c8e",
+    "docs/assets/css/method.css": "77d45c1dc8487e559009105be64cc6c002d555bc5d6ad10f43594b5c944962b2",
+    "docs/assets/css/style.css": "7476313f4d28099db20dc91c6d4e4508ced5860b990b906e5333960858481fb9",
+    "docs/assets/js/app.js": "87879123e7ebff97bfea5d40a5b7a0157dbd68216c2b02b849a0d1e760045360",
+    "docs/assets/js/board.js": "f9aa89049d4ea8b5cdf58e43c50276cb9f63bc3d937cf595071b25dacd1a8d8c",
+    "docs/assets/js/briefing.js": "2edc2c87ac163277ff3622196a5ea5b2bc26f974dca7cd5e09412710d4aff6b0",
+    "docs/assets/js/charts.js": "2700d6a852826f2bf30bc813115b28f6621210eac85f934ddc212625f5a01e56",
+    "docs/assets/js/derive.js": "e0132af999a2f0cc5331bc33c8094945399d33f68303f3a53d44408bea73a957",
+    "docs/assets/js/driver.js": "13b06d02e5c250169b52be1c5071f68d2607982c6e64706716bcc97cf79acf9e",
+    "docs/assets/js/engine-worker.js": "d058ff6a56c2fbbdff5ba8909e07ec85b85af93fd04ad4dff154cb3ce02cc9e9",
+    "docs/assets/js/format.js": "e3b6610beeb68950197aa74eb599ed42d97908bfdd3f19978e17b42b8205143b",
+    "docs/assets/js/method.js": "ee40501c9b736e2c7a7d612b68aeb49174c7b4568a77b5b47b5e3d6dc64c98b0",
+    "docs/assets/js/validation-tables.js": "0c5c92354dd852a480de3c02b1a7c5daa42d9dff29c29850f69f72d34f280715"
+  }
+}
