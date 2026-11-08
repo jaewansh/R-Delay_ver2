@@ -110,6 +110,27 @@ test("화물 카드: 확률을 단정문으로 바꾸지 않는다", () => {
   assert.match(sa.note, /가상 시험에서는 바꿔도 놓친 비율이 같았습니다\(10%→10%\)/);
 });
 
+test("시간 변경 권장: 포워더는 바꿀 시각을 협력 운송사에 요청한다(조사·수소 트럭 표기 포함)", () => {
+  assert.equal(cargoView(R.terminal_failure, "ulsan_export", VALID).action, "16:00 출발로 앞당기도록 운송사에 요청하세요");
+  assert.equal(cargoView(R.holiday_surge, "sea_air", VALID).action, "터미널 도착을 17:30으로 앞당기도록 운송사에 요청하세요");
+  // 6장면의 모든 「시간 변경 권장」 카드가 운송사 요청으로 끝난다
+  for (const run of Object.values(R)) {
+    for (const key of Object.keys(run.cargo)) {
+      const v = cargoView(run, key, VALID);
+      if (v.cls === "change") assert.match(v.action, /(앞당기도록|늦추도록) 운송사에 요청하세요$/, v.action);
+      else assert.ok(!v.action.includes("운송사에 요청"), v.action);
+    }
+  }
+  // 늦추는 쪽, 받침 없는 시각(22:15 → 「로」)
+  const late = structuredClone(R.holiday_surge);
+  late.cargo.sea_air.decision = { ...late.cargo.sea_air.decision, choice: "도착 22:15" };
+  assert.equal(cargoView(late, "sea_air", VALID).action, "터미널 도착을 22:15로 늦추도록 운송사에 요청하세요");
+  // 수소 트럭 안: 괄호를 떼고 조사를 고른다(추천안을 수소 트럭으로 고쳐 재현)
+  const h2 = structuredClone(R.terminal_failure);
+  h2.cargo.ulsan_export.candidates.find((x) => x.label === "출발 16:00").vehicle = "수소";
+  assert.equal(cargoView(h2, "ulsan_export", VALID).action, "16:00 출발(수소 트럭)로 앞당기도록 운송사에 요청하세요");
+});
+
 test("화물 순서: 급한 것부터, 화주 안내는 놓칠 확률이 큰 순서", () => {
   for (const run of Object.values(R)) {
     const keys = sortedCargo(run);
@@ -142,6 +163,7 @@ test("펼친 카드: 같은 위험 시각은 묶고, 우선 하역은 승인 여
   assert.ok(d.options[0].tags.includes("지금 계획"));
   const pr = d.options.find((o) => o.tags.includes("우선 하역 요청"));
   assert.match(pr.text, /^승인되면 19% · 안 되면 44%\(반반 가정 32%\)$/);
+  assert.equal(pr.status, "선사·터미널 승인 필요", "포워더는 선사를 통해 터미널에 우선 하역을 요청한다");
   assert.ok(!d.why.some((w) => /충분|여유 부족/.test(w)));
   assert.ok(cargoDetail(R.terminal_failure, "ulsan_export").why.some((w) => /반입 금지/.test(w)));
 });

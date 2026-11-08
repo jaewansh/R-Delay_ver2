@@ -102,9 +102,9 @@ gh api -X POST "repos/<GitHub아이디>/R-Delay_ver2/pages" -f "source[branch]=m
 
 | 무엇을 볼까 | 주소 |
 |---|---|
-| 배차 담당자 화면(배차판·브리핑) | `https://<GitHub아이디>.github.io/R-Delay_ver2/` |
+| 포워더 화물 보드(화주별 오늘 화물·보낼 문서 4종) | `https://<GitHub아이디>.github.io/R-Delay_ver2/` |
 | 장면·화물 바로 열기 | `…/R-Delay_ver2/?s=terminal_failure&c=ulsan_export` |
-| 기사님 화면 | `…/R-Delay_ver2/driver.html?s=terminal_failure&c=ulsan_export&a=1` |
+| 기사님 화면(포워더·운송사가 보내는 링크) | `…/R-Delay_ver2/driver.html?s=terminal_failure&c=ulsan_export&a=1` |
 | 분석 화면 | `…/R-Delay_ver2/analysis.html?s=terminal_failure` |
 | 작동 원리·검증 | `…/R-Delay_ver2/method.html` |
 

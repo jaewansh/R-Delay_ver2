@@ -220,7 +220,7 @@
    }
   },
   "terminal_failure": {
-   "label": "자동화 터미널 장비 고장(가상)",
+   "label": "터미널 장비 고장(가상)",
    "worlds": 60,
    "spread_alarm": {
     "tp": 53,

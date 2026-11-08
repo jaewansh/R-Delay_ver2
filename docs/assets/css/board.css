@@ -1,5 +1,5 @@
-/* R-Delay 배차 브리핑(배차 담당자 화면) + 기사님 화면.
-   - 시간축 하나에 오늘 화물을 줄 세운 「배차판」이 중심, 브리핑 문서(종이)만 떠 있다.
+/* R-Delay 포워더 화물 보드(중소 포워더 담당자 화면) + 기사님 화면.
+   - 시간축 하나에 화주별 오늘 화물을 줄 세운 「화물 보드」가 중심, 브리핑 문서(종이)만 떠 있다.
    - 상태는 모양+단어+색을 함께 쓴다: 안내 필요 ■ 빨강 · 시간 변경 ▲ 주황 · 계획대로 ● 초록 · 보류 ◆ 회색. */
 @font-face { font-family: "Pretendard Variable"; src: url("../fonts/PretendardVariable.subset.woff2") format("woff2-variations"), url("../fonts/PretendardVariable.subset.woff2") format("woff2"); font-weight: 45 920; font-display: swap; }
 @font-face { font-family: "Barlow Semi Condensed"; src: url("../fonts/barlow-semi-condensed-latin-600-normal.woff2") format("woff2"); font-weight: 600; font-display: swap; }
@@ -144,6 +144,7 @@ a { color: var(--brand); }
 .board { background: var(--surface); border: 1px solid var(--line-2); border-radius: 14px; overflow: hidden; }
 .board-head { display: flex; align-items: baseline; gap: 16px; padding: 16px 22px 10px; flex-wrap: wrap; }
 .board-head h2 { margin: 0; font-size: 19px; font-weight: 800; letter-spacing: -0.01em; }
+.board-sub { font-size: 15px; font-weight: 700; color: var(--muted); }
 .counts { margin: 0; display: flex; gap: 8px; flex-wrap: wrap; font-size: 13px; }
 .count { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; font-weight: 700; background: var(--hold-wash); color: var(--hold-ink); }
 .count[data-level="critical"] { background: var(--red-wash); color: var(--red-ink); }
@@ -162,7 +163,7 @@ a { color: var(--brand); }
 .row:last-child { border-bottom: 0; }
 .row:hover { background: var(--surface-2); }
 .row[aria-selected="true"] { background: var(--surface-2); box-shadow: inset 4px 0 0 var(--brand); }
-.row-info { min-width: 0; }
+.row-info { min-width: 0; word-break: keep-all; overflow-wrap: anywhere; }
 .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 800; padding: 2px 9px 2px 7px; border-radius: 6px; background: var(--hold-wash); color: var(--hold-ink); }
 .pill[data-level="critical"] { background: var(--red-wash); color: var(--red-ink); }
 .pill[data-level="warning"] { background: var(--amber-wash); color: var(--amber-ink); }
@@ -175,6 +176,8 @@ a { color: var(--brand); }
 .shape[data-s="dia"] { background: currentColor; transform: rotate(45deg) scale(0.8); }
 .shape[data-s="chk"] { width: 11px; height: 6px; border-left: 2.5px solid currentColor; border-bottom: 2.5px solid currentColor; transform: rotate(-45deg) translate(1px, -1px); }
 .row-name { margin: 8px 0 0; font-size: 17px; font-weight: 800; letter-spacing: -0.01em; line-height: 1.3; }
+.row-shipper { margin: 3px 0 0; font-size: 13px; font-weight: 600; color: var(--ink-2); line-height: 1.4; }
+.row-shipper span { color: var(--muted); font-weight: 700; margin-right: 2px; }
 .row-route { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
 .row-act { margin: 8px 0 0; font-size: 15px; font-weight: 800; color: var(--ink); line-height: 1.4; }
 .row-tip { margin: 4px 0 0; font-size: 12.5px; color: var(--muted); }
@@ -240,8 +243,9 @@ a { color: var(--brand); }
 .brief-head h2 { margin: 0; font-size: 19px; font-weight: 800; }
 .brief-for { margin: 0; font-size: 14px; color: var(--ink-2); font-weight: 600; }
 .brief-head .btn-quiet { margin-left: auto; font-size: 13px; }
-.tabs { display: grid; grid-template-columns: repeat(4, 1fr); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 3px; }
-.tab { border: 0; background: transparent; border-radius: 7px; padding: 7px 4px; font-size: 13.5px; font-weight: 700; color: var(--muted); cursor: pointer; }
+/* 문서 이름 길이가 달라(「선사·터미널 협의」) 칸 너비는 글자에 맞추고, 줄바꿈은 띄어쓰기에서만 한다 */
+.tabs { display: grid; grid-template-columns: repeat(4, auto); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 3px; }
+.tab { border: 0; background: transparent; border-radius: 7px; padding: 7px 4px; font-size: 13.5px; font-weight: 700; color: var(--muted); cursor: pointer; word-break: keep-all; }
 .tab[aria-selected="true"] { background: var(--ink); color: var(--surface); }
 .tab small { display: block; font-size: 10.5px; font-weight: 600; opacity: 0.75; margin-top: -1px; }
 .paper { background: var(--paper); color: var(--paper-ink); border-radius: 6px; box-shadow: var(--shadow-paper); padding: 26px 28px 22px; max-height: calc(100vh - 290px); min-height: 360px; overflow: auto; font-size: 14px; line-height: 1.65; border: 1px solid var(--paper-line); outline: none; }
@@ -351,6 +355,7 @@ dialog::backdrop { background: rgba(8, 18, 29, 0.45); }
 .drv-top svg { width: 26px; height: 26px; }
 .drv-top b { font-size: 17px; }
 .drv-top .tag-demo { margin-left: auto; }
+.drv-intro { margin: 12px 18px 0; font-size: 13px; font-weight: 600; color: var(--ink-2); }
 .drv-card { margin: 14px 14px 0; background: var(--surface); border-radius: 14px; padding: 18px 18px 16px; border: 1px solid var(--line-2); }
 .drv-what { margin: 0; font-size: 14px; color: var(--muted); font-weight: 700; }
 .drv-cargo { margin: 2px 0 0; font-size: 18px; font-weight: 800; line-height: 1.3; }
@@ -374,4 +379,4 @@ dialog::backdrop { background: rgba(8, 18, 29, 0.45); }
 .drv-call a { flex: 1; text-align: center; text-decoration: none; padding: 14px; border-radius: 12px; font-weight: 800; font-size: 16px; }
 .drv-call .call { background: var(--brand); color: var(--brand-ink); }
 .drv-call .back { background: var(--surface); color: var(--ink); border: 1px solid var(--line); }
-.drv-foot { margin: 14px 18px 0; font-size: 12px; color: var(--muted); }
+.drv-foot { margin: 14px 18px 0; font-size: 12px; color: var(--ink-2); }

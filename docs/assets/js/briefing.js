@@ -1,21 +1,24 @@
-// 상황별 브리핑 초안: 엔진 결과(run) → 화주 안내 · 기사 지시 · 사내 보고 · 항만 협의 문서.
+// 상황별 브리핑 초안: 엔진 결과(run) → 화주 안내 · 운송사 요청 · 사내 보고 · 선사·터미널 협의 문서.
+// 쓰는 사람은 중소 포워더 담당자다. 화주별 화물을 맡아 협력 운송사에 출발 시각을 요청하고, 선사·터미널과 협의한다.
 // DOM을 건드리지 않는 순수 함수다(tests/briefing.test.mjs로 확인). 문장 안의 숫자는 모두 엔진 출력에서 온다.
 // 판단 규칙(분류·놓칠 확률·추천 시각)은 derive.js를 그대로 쓰고, 여기서는 받는 사람에 맞춰 말투와 순서만 바꾼다.
+// 문서 key(shipper·driver·internal·port)는 주소(?doc=)와 시험이 쓰므로 그대로 두고 이름만 바꾼다.
 import {
   classifyCargo, verbOf, statusView, sortedCargo, sameIfEarly, nodeState, STATE_WORD, isHold, driverAdvice,
-} from "./derive.js?v=20261107a";
+} from "./derive.js?v=20261109a";
 import {
   NODE_NAME, SCENARIO_CHIP, CARGO_SHORT, clock, clock10, clock10ceil, fmtDur, fmtP, fmtWon, fmtRd, fmtCap, nextUpdateText,
-} from "./format.js?v=20261107a";
+} from "./format.js?v=20261109a";
 
 export const DOC_KINDS = [
   { key: "shipper", label: "화주 안내", scope: "cargo" },
-  { key: "driver", label: "기사 지시", scope: "cargo" },
+  { key: "driver", label: "운송사 요청", scope: "cargo" },
   { key: "internal", label: "사내 보고", scope: "day" },
-  { key: "port", label: "항만 협의", scope: "day" },
+  { key: "port", label: "선사·터미널 협의", scope: "day" },
 ];
 
-// 시연용 화물 정보(가상). 컨테이너 번호의 RDLU는 R-Delay 시연용 접두어다.
+// 시연용 화물 정보(가상). 포워더가 맡은 화주별 화물이다. 컨테이너 번호의 RDLU는 R-Delay 시연용 접두어다.
+// act는 화주 안내에 넣는 포워더 쪽 할 일(있을 때만), ask는 화주에게 부탁할 일이다.
 export const CARGO_META = {
   import_factory: {
     shipper: "양산 ○○산업 생산관리팀", container: "RDLU 100001-1", origin: "부산신항", dest: "양산 공장",
@@ -26,8 +29,10 @@ export const CARGO_META = {
     work: "신항 수입 컨테이너 반출 → 울산 완성차 라인", ask: "라인 투입 순서 조정이나 안전재고 투입을 검토해 주십시오.",
   },
   sea_air: {
-    shipper: "○○포워딩 항공수출팀", container: "RDLU 100003-2", origin: "부산신항", dest: "인천공항 화물터미널",
-    work: "신항 환적 컨테이너 반출 → 인천공항 화물터미널 반입", ask: "다음 항공편 예약이 가능한지 항공사와 미리 확인해 주십시오.",
+    shipper: "○○무역 물류팀", container: "RDLU 100003-2", origin: "부산신항", dest: "인천공항 화물터미널",
+    work: "신항 환적 컨테이너 반출 → 인천공항 화물터미널 반입",
+    act: "다음 항공편 좌석을 항공사에 미리 확인해 두겠습니다.",
+    ask: "다음 항공편으로 넘어가도 괜찮은지 도착지 납기를 확인해 주십시오.",
   },
   ulsan_export: {
     shipper: "울산 ○○정공 수출팀", container: "RDLU 100004-8", origin: "울산 공장", dest: "부산신항",
@@ -35,7 +40,9 @@ export const CARGO_META = {
   },
 };
 
-export const DEFAULT_SENDER = { company: "○○운송", name: "배차 담당 ○○○", phone: "010-0000-0000" };
+export const DEFAULT_SENDER = { company: "○○포워딩", name: "수출입 담당 ○○○", phone: "010-0000-0000" };
+// 운송사 요청을 받는 협력 운송사(시연용 가상 이름)
+export const DEFAULT_CARRIER = "○○운송 배차팀";
 export const DEMO_TAG = "시연용 가상 데이터로 만든 초안입니다. 보내기 전에 내용을 확인하세요.";
 
 const T = (t) => clock(t, false);
@@ -90,7 +97,7 @@ export function cargoFacts(run, key, applied = false) {
   const changed = applied && choice && !choice.is_plan;
   return {
     key, cls, c, plan, choice, least, cur, best, verb, changed,
-    meta: CARGO_META[key] || { shipper: "화주 담당자", container: "-", origin: "", dest: "", work: c.label, ask: null },
+    meta: CARGO_META[key] || { shipper: "화주 담당자", container: "-", origin: "", dest: "", work: c.label, act: null, ask: null },
     short: CARGO_SHORT[key] || c.label,
     pr: priorityOption(c),
     later: laterSame(c, least || choice || plan),
@@ -165,23 +172,30 @@ export function shipperDoc(run, key, opts = {}) {
     kv.push(["마감을 놓칠 가능성", cls === "notify" ? about(best.p_fail) : span(best.p_fail, best.p_upper)]);
     blocks.push({ kv });
     const acts = [];
-    if (sameIfEarly(run, key)) acts.push(`컨테이너가 나오는 대로 바로 싣도록 ${josa(verb === "도착" ? `터미널 ${T(best.time)} 도착` : `${T(best.time)} 출발`, ["으로", "로"])} 차량을 잡아 두었습니다.`);
-    else acts.push(`가장 덜 위험한 ${josa(verb === "도착" ? `터미널 ${T(best.time)} 도착` : `${T(best.time)} 출발`, ["으로", "로"])} 차량을 잡아 두었습니다.`);
-    if (f.pr) acts.push(`터미널에 우선 하역을 요청하겠습니다. 받아들여지면 놓칠 가능성이 ${josa(about(f.pr.p_if_approved), ["으로", "로"])} 낮아집니다.`);
+    // 포워더는 차량을 직접 몰지 않는다: 협력 운송사에 차량을 요청하고, 우선 하역은 선사를 통해 터미널에 요청한다
+    if (sameIfEarly(run, key)) acts.push(`컨테이너가 나오는 대로 바로 싣도록 협력 운송사에 ${josa(verb === "도착" ? `터미널 ${T(best.time)} 도착` : `${T(best.time)} 출발`, ["으로", "로"])} 차량을 요청해 두었습니다.`);
+    else acts.push(`협력 운송사에 가장 덜 위험한 ${josa(verb === "도착" ? `터미널 ${T(best.time)} 도착` : `${T(best.time)} 출발`, ["으로", "로"])} 차량을 요청해 두었습니다.`);
+    if (f.pr) acts.push(`선사를 통해 터미널에 우선 하역을 요청하겠습니다. 받아들여지면 놓칠 가능성이 ${josa(about(f.pr.p_if_approved), ["으로", "로"])} 낮아집니다.`);
+    if (meta.act) acts.push(meta.act);
     blocks.push({ h: "저희가 하는 일", list: acts });
     if (meta.ask) blocks.push({ h: "검토 부탁드립니다", p: meta.ask });
     blocks.push({ p: `${nextUpdateText(run)}에 상황을 다시 계산해 바뀌면 바로 연락드리겠습니다.` });
   } else if (cls === "change") {
-    const dir = choice.time < plan.time ? "앞당깁니다" : "늦춥니다";
-    kind = "일정 변경 안내";
+    // 변경을 아직 적용하지 않았으면(운송사와 차량 조율 중) 확정된 것처럼 쓰지 않는다
+    const pending = !f.changed;
+    const earlier = choice.time < plan.time;
+    const dir = pending
+      ? `${earlier ? "앞당기려고" : "늦추려고"} 협력 운송사와 차량을 조율하고 있습니다. 확정되면 바로 알려 드리겠습니다.`
+      : `${earlier ? "앞당깁니다" : "늦춥니다"}.`;
+    kind = pending ? "일정 변경 예정 안내" : "일정 변경 안내";
     title = `[${kind}] ${f.short} ${verb} ${T(plan.time)} → ${T(choice.time)}`;
     blocks.push({ p: hello });
     const why = c.gate_closed
       ? `터미널이 ${T(c.gate_closed[0])}~${T(c.gate_closed[1])} 수출 반입을 막는다고 공지해`
       : `${causePhrase(run)}`;
-    blocks.push({ p: `${why} ${josa(c.deadline_label, ["을", "를"])} 지키기 위해 ${verb} 시각을 ${T(plan.time)}에서 ${josa(T(choice.time), ["으로", "로"])} ${dir}.` });
+    blocks.push({ p: `${why} ${josa(c.deadline_label, ["을", "를"])} 지키기 위해 ${verb} 시각을 ${T(plan.time)}에서 ${josa(T(choice.time), ["으로", "로"])} ${dir}` });
     const kv = [
-      ["바뀐 " + verb + " 시각", `${T(choice.time)} (기존 ${T(plan.time)})`],
+      [pending ? `바꿀 ${verb} 시각(조율 중)` : `바뀐 ${verb} 시각`, `${T(choice.time)} (기존 ${T(plan.time)})`],
       [c.kind === "export" ? "반입 완료 예상" : "최종 도착 예상", `${clock10(choice.arrival_q50)} 전후 (늦으면 ${clock10ceil(choice.arrival_q90)})`],
       ["마감을 놓칠 가능성", `${fmtP(plan.p_fail)} → ${fmtP(choice.p_fail)}`],
     ];
@@ -189,9 +203,12 @@ export function shipperDoc(run, key, opts = {}) {
     if (extra > 0) kv.push(["추가 운송비(예상)", fmtWon(extra)]);
     blocks.push({ kv });
     if (c.kind === "export") {
-      blocks.push({ h: "준비 부탁드립니다", p: `컨테이너 적입과 수출 서류를 ${T(choice.time - 0.5)}까지 마쳐 주십시오. 차량은 ${T(choice.time)}에 출발합니다.` });
+      blocks.push({ h: "준비 부탁드립니다", p: `컨테이너 적입과 수출 서류를 ${T(choice.time - 0.5)}까지 마쳐 주십시오.${pending ? "" : ` 차량은 ${T(choice.time)}에 출발합니다.`}` });
     } else {
-      blocks.push({ h: "준비 부탁드립니다", p: `${T(choice.time)} 도착에 맞춰 하차 인력을 준비해 주십시오.` });
+      // 수입: '도착'은 터미널 도착 시각이라 공장 하차는 최종 도착 예상에 맞추고, 조율 중이면 시각을 약속하지 않는다
+      blocks.push({ h: "준비 부탁드립니다", p: pending
+        ? "시각이 확정되면 최종 도착 예상 시각과 함께 다시 알려 드리겠습니다. 하차 인력은 그때 맞춰 주십시오."
+        : `최종 도착 예상(${clock10(choice.arrival_q50)} 전후)에 맞춰 하차 인력을 준비해 주십시오.` });
     }
     blocks.push({ p: `${nextUpdateText(run)}에 다시 확인하고 바뀌면 바로 알려 드리겠습니다.` });
   } else if (cls === "hold-uncertain") {
@@ -219,15 +236,36 @@ export function shipperDoc(run, key, opts = {}) {
   };
 }
 
-// ---------- 2. 기사 지시 ----------
+// ---------- 2. 운송사 요청 ----------
+// 포워더가 협력 운송사에 보내는 요청: 요청 시각, 이유, 마감 위험, 기사님께 전할 링크.
+// 차량 배정은 운송사가 한다. 변경을 적용하기 전(시간 변경 권장)에는 추천 시각에 차량을 낼 수 있는지 먼저 묻는다.
+const whenText = (verb, cand) => `${verb === "도착" ? `터미널 ${T(cand.time)} 도착` : `${T(cand.time)} 출발`}${isH2(cand) ? "(수소 트럭)" : ""}`;
+function changeReason(run, c) {
+  const why = c.gate_closed ? `터미널이 ${T(c.gate_closed[0])}~${T(c.gate_closed[1])} 수출 반입을 막는다고 공지해` : causePhrase(run);
+  return `${why} ${josa(c.deadline_label, ["을", "를"])} 지키기 위해서입니다.`;
+}
 export function driverDoc(run, key, opts = {}) {
   const sender = { ...DEFAULT_SENDER, ...(opts.sender || {}) };
   const f = cargoFacts(run, key, !!opts.applied);
-  const { c, plan, cur, verb, meta } = f;
+  const { c, cls, plan, choice, cur, verb, meta } = f;
+  const to = opts.carrier || DEFAULT_CARRIER;
+  const review = !f.changed && cls === "change" && !!choice; // 시간 변경을 권하지만 아직 적용하지 않음
+  const vehicleOnly = f.changed && Math.abs(cur.time - plan.time) < 1e-9;
+  const what = verb === "도착" ? "터미널 도착" : "출발";
   const blocks = [];
-  const kv = [["화물", `${c.label}`], ["컨테이너", meta.container], ["작업", meta.work]];
-  if (f.changed) kv.push(["시간 변경", `${verb} ${T(plan.time)} → ${T(cur.time)}`]);
-  else if (f.cls === "change" && f.choice) kv.push(["변경 검토 중", `${verb} ${T(f.choice.time)} 권장 — 배차 확정 전입니다`]);
+  let ask;
+  if (vehicleOnly) ask = `${f.short} 화물의 차량을 ${josa(isH2(cur) ? "수소 트럭" : `${cur.vehicle} 차량`, ["으로", "로"])} 바꿔 주시기 바랍니다.`;
+  else if (f.changed) ask = `${f.short} 화물의 ${what} 시각을 ${T(plan.time)}에서 ${josa(T(cur.time), ["으로", "로"])} 바꿔 주시기 바랍니다.${isH2(cur) && !isH2(plan) ? " 차량은 수소 트럭으로 부탁드립니다." : ""}`;
+  else if (review) ask = `${f.short} 화물의 ${what} 시각을 ${josa(T(choice.time), ["으로", "로"])} 바꾸는 것을 검토하고 있습니다.`;
+  else ask = `${f.short} 화물의 운송을 아래 일정대로 부탁드립니다.`;
+  blocks.push({ p: `${to} 담당자님, ${sender.company} ${sender.name}입니다. ${ask}` });
+  if (cls === "change" && (f.changed || review)) blocks.push({ p: changeReason(run, c) });
+
+  const kv = [];
+  if (vehicleOnly) kv.push(["차량 변경", `${plan.vehicle} → ${isH2(cur) ? "수소 트럭" : cur.vehicle}`]);
+  else if (f.changed) kv.push(["시간 변경", `${verb} ${T(plan.time)} → ${T(cur.time)}`]);
+  else if (review) kv.push(["변경 검토 중", `${verb} ${T(choice.time)}${isH2(choice) ? "(수소 트럭)" : ""} 권장 — 아직 확정 전입니다`]);
+  kv.push(["화물", c.label], ["화주", meta.shipper], ["컨테이너", meta.container], ["작업", meta.work]);
   if (c.kind === "export") {
     kv.push(["출발", `${T(cur.time)}${isH2(cur) ? " · 수소 트럭" : ""}`]);
     kv.push(["반입 완료 예상", `${clock10(cur.arrival_q50)} (늦으면 ${clock10ceil(cur.arrival_q90)})`]);
@@ -238,22 +276,36 @@ export function driverDoc(run, key, opts = {}) {
     kv.push(["터미널에서 걸리는 시간", `약 ${fmtDur(cur.exp_turnaround_h)}`]);
   }
   kv.push(["마감", c.deadline_label]);
+  // 마감 위험: 바꿨으면 전→후, 검토 중이면 지금 계획→바꾸면, 아니면 이 일정의 값(화주 안내와 같은 표기)
+  const a = fmtP(plan.p_fail), b = fmtP(cur.p_fail);
+  kv.push(["마감을 놓칠 가능성", f.changed ? (a === b ? b : `${a} → ${b}`)
+    : review ? `지금 계획 ${a} → 바꾸면 ${fmtP(choice.p_fail)}`
+    : cls === "notify" ? about(cur.p_fail)
+    : cls === "hold-conservative" || cls === "hold-uncertain" ? span(cur.p_fail, cur.p_upper)
+    : b]);
   blocks.push({ kv });
-  const warn = [];
-  if (c.gate_closed) warn.push(`${T(c.gate_closed[0])}~${T(c.gate_closed[1])} 수출 반입 금지(터미널 공지) — ${T(c.gate_closed[0])} 전에 반입해야 합니다.`);
-  if (c.kind === "import" && c.ready && cur.time + 0.25 < c.ready.q50) warn.push(`컨테이너가 ${clock10(c.ready.q50)}쯤 나옵니다. 그 전에 도착하면 기다려야 합니다.`);
+  if (isH2(cur) && c.h2_note) blocks.push({ note: c.h2_note });
+
+  // 기사님께 전할 말: 운송사가 기사님께 그대로 전하거나 링크를 보낸다
+  const relay = [];
+  if (c.gate_closed) relay.push(`${T(c.gate_closed[0])}~${T(c.gate_closed[1])} 수출 반입 금지(터미널 공지) — ${T(c.gate_closed[0])} 전에 반입해야 합니다.`);
+  if (c.kind === "import" && c.ready && cur.time + 0.25 < c.ready.q50) relay.push(`컨테이너가 ${clock10(c.ready.q50)}쯤 나옵니다. 그 전에 도착하면 기다려야 합니다.`);
   const L = run.nodes.findIndex((n) => n.id === "L");
-  if (L >= 0 && nodeState(run, L) !== "ok") warn.push(`게이트·도로(양산·울산) ${STATE_WORD[nodeState(run, L)]} — 출발 전에 길 상황을 확인하세요.`);
+  if (L >= 0 && nodeState(run, L) !== "ok") relay.push(`게이트·도로(양산·울산) ${STATE_WORD[nodeState(run, L)]} — 출발 전에 길 상황을 확인하세요.`);
+  // 변경 검토 중에는 링크를 보내지 않는다(기사님 화면이 아직 지금 계획 시각을 보여 주므로). 차량이 정해지면 다시 요청한다
+  if (opts.driverUrl && !review) relay.push(`기사님 화면(몇 시에 가면 덜 기다리는지): ${opts.driverUrl}`);
+  if (relay.length) blocks.push({ h: "기사님께 전해 주십시오", list: relay });
+
+  const reply = [review ? `${whenText(verb, choice)} 차량을 낼 수 있는지 알려 주십시오.` : "배정 차량 번호와 기사님 연락처를 알려 주십시오."];
   const jam = run.now.congested.filter((s) => s !== "육상");
-  if (jam.length && c.kind === "import") warn.push("터미널 혼잡 — 도착하면 배차실에 도착 시각을 알려 주세요.");
-  if (isH2(cur) && c.h2_note) warn.push(c.h2_note);
-  if (warn.length) blocks.push({ h: "주의", list: warn });
-  const url = opts.driverUrl ? opts.driverUrl : null;
-  if (url) blocks.push({ p: `도착 시각별 대기 시간 보기: ${url}` });
+  if (jam.length && c.kind === "import") reply.push("터미널이 혼잡합니다. 기사님이 터미널에 도착하면 도착 시각을 알려 주십시오.");
+  blocks.push({ h: "회신 부탁드립니다", list: reply });
+  blocks.push({ p: `${review ? "차량이 정해지면 기사님 화면 링크를 담아 다시 요청드리겠습니다. " : ""}${nextUpdateText(run)}에 다시 확인해 바뀌면 바로 알려 드리겠습니다.` });
+  const tag = vehicleOnly ? " · 차량 변경" : f.changed ? ` · ${verb} 시각 변경` : review ? " · 변경 검토" : "";
   return {
-    kind: "driver", title: `[배차 지시] ${f.short}${f.changed ? " · 시간 변경" : ""}`,
-    meta: [["받는 사람", opts.driver || "차량 1호 기사님"], ["보내는 사람", senderLine(sender)], ["기준", asOf(run)]],
-    blocks, sign: `문의: ${sender.name} ${sender.phone}`, footer: DEMO_TAG, cls: f.cls, short: f.short,
+    kind: "driver", title: `[운송 요청] ${f.short}${tag}`,
+    meta: [["받는 사람", to], ["보내는 사람", senderLine(sender)], ["기준", asOf(run)]],
+    blocks, sign: `문의: ${senderLine(sender)}`, footer: DEMO_TAG, cls: f.cls, short: f.short,
   };
 }
 
@@ -299,7 +351,7 @@ export function internalDoc(run, opts = {}) {
   }
   if (!money.length) money.push("오늘은 추가 비용이 생길 화물이 없습니다.");
   blocks.push({ h: "3. 비용·영향", list: money });
-  blocks.push({ h: "4. 다음 확인", p: `${nextUpdateText(run)} 관측이 들어오면 다시 계산합니다. 터미널 공지가 바뀌면 즉시 다시 봅니다.` });
+  blocks.push({ h: "4. 다음 확인", p: `${nextUpdateText(run)} 관측이 들어오면 다시 계산합니다. 선사·터미널 공지가 바뀌면 즉시 다시 봅니다.` });
   return {
     kind: "internal", title: `신항 지연 브리핑 — ${asOf(run)}`,
     meta: [["받는 사람", opts.boss || "운영팀장·대표"], ["작성", senderLine(sender)], ["상황", SCENARIO_CHIP[run.meta.scenario] || run.meta.scenario_label]],
@@ -307,14 +359,15 @@ export function internalDoc(run, opts = {}) {
   };
 }
 
-// ---------- 4. 항만 협의(터미널·항만공사·부산시) ----------
+// ---------- 4. 선사·터미널 협의(참조: 부산항만공사) ----------
+// 포워더가 선사·터미널 운영사에 보내는 공유·협의 문서: 번짐 현황, 번짐을 멈추는 대응, 맡은 화물 영향, 요청 사항.
 export function portDoc(run, opts = {}) {
   const sender = { ...DEFAULT_SENDER, ...(opts.sender || {}) };
   const now = run.now;
   const st = statusView(run);
   const F = Object.fromEntries((now.factors || []).map((x) => [x.key, x]));
   const blocks = [];
-  blocks.push({ p: `${josa(sender.company, ["은", "는"])} 부산신항 출입 차량의 배차를 R-Delay로 관리하고 있습니다. ${asOf(run)} 계산 결과를 공유드리며, 대응 우선순위 협의를 요청드립니다.` });
+  blocks.push({ p: `${josa(sender.company, ["은", "는"])} 화주들의 부산신항 수출입·Sea&Air 화물을 맡아 R-Delay로 관리하는 포워더입니다. ${asOf(run)} 계산 결과를 공유드리며, 대응 우선순위 협의를 요청드립니다.` });
   blocks.push({ h: "1. 지연 번짐 현황", kv: [
     ["경보", `${now.alarm}${isHold(run) ? " (판단 경계)" : ""}`],
     ["번짐 지수", `${fmtRd(now.rd_median)} — 지연 1건이 풀리기 전에 새 지연을 평균 ${fmtRd(now.rd_median)}건 만듭니다(1보다 크면 번짐)`],
@@ -337,15 +390,22 @@ export function portDoc(run, opts = {}) {
         : "한 가지 대응만으로는 번짐이 멈추지 않습니다. 여러 대응을 함께 검토해야 합니다.";
     blocks.push({ p: lead });
   }
-  blocks.push({ h: "3. 운송사 쪽 영향", list: sortedCargo(run).map((key) => {
+  const keys = sortedCargo(run);
+  blocks.push({ h: "3. 저희가 맡은 화물 영향", list: keys.map((key) => {
     const f = cargoFacts(run, key, false);
     if (f.cls === "change") return `${f.short}: 시간 변경 필요 — 현행 계획이면 놓칠 확률 ${fmtP(f.plan.p_fail)}, 바꾸면 ${fmtP(f.choice.p_fail)}`;
     return `${f.short}: ${ACTION_WORD[f.cls]} — 놓칠 확률 ${fmtP(f.best.p_fail)}`;
   }) });
+  // 요청 사항: 마감이 위험한 수입 화물의 우선 하역(승인이 필요한 협의안, 엔진의 승인 시 확률 그대로)과 일정 변경 공유
+  const asks = keys.map((key) => cargoFacts(run, key, false))
+    .filter((f) => f.pr && (f.cls === "notify" || f.cls === "hold-conservative"))
+    .map((f) => `${f.short}: 우선 하역 요청 — 받아들여지면 놓칠 확률 ${fmtP(f.pr.p_if_approved)}(지금 ${fmtP(f.best.p_fail)})`);
+  asks.push("선석·하역 일정이나 반입 제한이 바뀌면 바로 알려 주십시오.");
+  blocks.push({ h: "4. 요청 사항", list: asks });
   blocks.push({ note: "원인 판정은 모형상 배분이며 책임 소재 판단에 쓰지 않습니다." });
   return {
     kind: "port", title: `부산신항 지연 번짐 공유 — ${asOf(run)}`,
-    meta: [["받는 사람", opts.port || "터미널 운영사·부산항만공사 담당자"], ["보내는 사람", senderLine(sender)], ["상황", SCENARIO_CHIP[run.meta.scenario] || run.meta.scenario_label]],
+    meta: [["받는 사람", opts.port || "선사·터미널 운영사 담당자(참조: 부산항만공사)"], ["보내는 사람", senderLine(sender)], ["상황", SCENARIO_CHIP[run.meta.scenario] || run.meta.scenario_label]],
     blocks, sign: `${sender.company} ${sender.name}`, footer: `R-Delay 모형 추정 · ${DEMO_TAG}`, cls: null, short: "오늘 전체",
   };
 }
@@ -403,7 +463,7 @@ export function docToHTML(doc) {
   return parts.join("");
 }
 
-// 기사님 휴대폰 화면 주소(배차 담당이 보내는 링크)
+// 기사님 휴대폰 화면 주소(포워더·운송사가 기사님께 보내는 링크)
 export function driverLink(base, run, key, applied = false) {
   const u = new URL("driver.html", base);
   u.searchParams.set("s", run.meta.scenario);

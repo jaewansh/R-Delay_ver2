@@ -1,7 +1,7 @@
 {
-  "name": "R-Delay 배차 브리핑",
+  "name": "R-Delay 포워더 화물 보드",
   "short_name": "R-Delay",
-  "description": "부산신항 지연이 번지기 전에 오늘 화물의 출발 시각과 화주·기사 안내문을 정해 주는 배차 담당자 화면(시연용 가상 데이터)",
+  "description": "중소 포워더를 위한 연쇄지연 조기경보·화물별 마감 판단·안내문(시연용 가상 데이터)",
   "lang": "ko",
   "start_url": "./index.html",
   "scope": "./",

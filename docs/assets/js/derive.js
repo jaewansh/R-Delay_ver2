@@ -1,10 +1,11 @@
 // 엔진 결과(run) → 화면 문장. DOM을 건드리지 않는 순수 함수다(tests/derive.test.mjs로 확인).
 // 이 규칙은 엔진이 검증한 출력이 아니라 표시 방식이며, method.html §4에 같은 내용을 공개한다.
 // 용어: 허용 위험(ε), 오차 감안(몬테카를로 오차 상한 p̂⁺), 지금 번지는 중일 확률(P(R_d>1)), 가상 시험 결과는 「시험에서」.
+// 읽는 사람은 중소 포워더 담당자다: 시간 변경은 협력 운송사에 요청하고, 마감이 위험하면 화주에게 미리 알린다.
 import {
   NODE_NAME, SCENARIO_CHIP, CARGO_SHORT, clock, clock10, clock10ceil, fmtDur, fmtDurCeil, fmtDurRange, fmtP, fmtWon, fmtRd,
   fmtRatio, fmtCap, nextUpdateText, hourLabel,
-} from "./format.js?v=20261107a";
+} from "./format.js?v=20261109a";
 
 export const LEVEL_OF_ALARM = { "정상": "good", "적체 경보": "warning", "확산 경보": "serious", "확산·적체 경보": "critical" };
 
@@ -21,6 +22,15 @@ export function topic(word) {
   if (/[가-힣]/.test(ch)) return `${word}${(ch.charCodeAt(0) - 0xac00) % 28 ? "은" : "는"}`;
   if (/[0-9]/.test(ch)) return `${word}${"013678".includes(ch) ? "은" : "는"}`;
   return `${word}는`;
+}
+// 으로/로: 받침이 없거나 ㄹ 받침이면 「로」(끝의 괄호 설명은 떼고 본다. 숫자는 읽는 소리로: 1·7·8은 ㄹ, 2·4·5·9는 받침 없음)
+function ro(word) {
+  const base = word.replace(/\s*\([^()]*\)\s*$/, "");
+  const ch = base.charAt(base.length - 1);
+  let jong = 0;
+  if (/[가-힣]/.test(ch)) jong = (ch.charCodeAt(0) - 0xac00) % 28;
+  else if (/[0-9]/.test(ch)) jong = "2459".includes(ch) ? 0 : "178".includes(ch) ? 8 : 1;
+  return `${word}${jong === 0 || jong === 8 ? "로" : "으로"}`;
 }
 function firstStay(n, ok, start = 0) {
   if (n === 0 || !ok(n - 1)) return null;
@@ -270,9 +280,12 @@ export function cargoView(run, key, valid = null) {
   const eps = fmtP(c.epsilon);
   let action = "", reason = "", note = null;
   if (cls === "change") {
-    const dir = choice.time < plan.time ? "앞당기세요" : "늦추세요";
-    action = c.kind === "export" ? `${timeOf(choice)} 출발로 ${dir}` : `터미널 도착을 ${timeOf(choice)}으로 ${dir}`;
-    if (isH2(choice)) action += " · 수소 트럭";
+    // 포워더는 차량을 직접 몰지 않으므로 바꿀 시각을 협력 운송사에 요청한다
+    const dir = choice.time < plan.time ? "앞당기도록" : "늦추도록";
+    const h2 = isH2(choice) ? "(수소 트럭)" : "";
+    action = c.kind === "export"
+      ? `${ro(`${timeOf(choice)} 출발${h2}`)} ${dir} 운송사에 요청하세요`
+      : `터미널 도착을 ${ro(`${timeOf(choice)}${h2}`)} ${dir} 운송사에 요청하세요`;
     if (plan.p_fail > c.epsilon) {
       reason = `지금 계획(${timeOf(plan)} ${verb})대로면 ${riskWords(plan.p_fail)} → 바꾸면 놓칠 확률 ${fmtPvs(choice.p_fail, c.epsilon)}`;
     } else {
@@ -429,7 +442,7 @@ export function cargoDetail(run, key) {
     let text = `놓칠 확률 ${fmtPvs(r.p, c.epsilon)}${r.members.length > 1 ? "(이 시간대 어느 때나)" : ""} · 오차 감안 ${fmtPvs(r.upper, c.epsilon)}`;
     if (r.negotiation && r.approved != null) {
       const no = Math.min(1, Math.max(0, 2 * r.p - r.approved));
-      status = "터미널 승인 필요";
+      status = "선사·터미널 승인 필요"; // 포워더는 선사를 통해 터미널에 우선 하역을 요청한다
       text = `승인되면 ${fmtP(r.approved)} · 안 되면 ${fmtP(no)}(반반 가정 ${fmtP(r.p)})`;
     }
     if (r.infeasible) {

@@ -1,7 +1,8 @@
-// 기사님 화면: 배차 담당이 보낸 링크(driver.html?s=장면&c=화물&a=1)로 연다. 큰 글씨 한 줄 + 도착 시각별 소요 띠.
-import { driverAdvice } from "./derive.js?v=20261107a";
-import { clock, fmtDurShort, hourLabel, CARGO_SHORT } from "./format.js?v=20261107a";
-import { driverHeadline, cargoFacts, CARGO_META } from "./briefing.js?v=20261107a";
+// 기사님 화면: 포워더·운송사가 보낸 링크(driver.html?s=장면&c=화물&a=1)로 연다. 큰 글씨 한 줄 + 도착 시각별 소요 띠.
+// 포워더는 추천 시각을 협력 운송사에 요청하고, 운송사(또는 포워더)가 이 링크를 기사님께 전한다.
+import { driverAdvice } from "./derive.js?v=20261109a";
+import { clock, fmtDurShort, hourLabel, CARGO_SHORT } from "./format.js?v=20261109a";
+import { driverHeadline, cargoFacts, CARGO_META } from "./briefing.js?v=20261109a";
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
@@ -35,6 +36,7 @@ async function main() {
   if (!(f.c.kind === "export" && f.c.gate_closed)) $("d-lg-closed").hidden = true;
   document.title = `R-Delay 기사님 안내 · ${CARGO_SHORT[key] || ""}`;
   document.documentElement.dataset.ready = "1";
+  if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register("sw.js").catch(() => {});
 }
 main().catch((err) => {
   $("d-cargo").textContent = `화면을 불러오지 못했습니다(${err.message})`;

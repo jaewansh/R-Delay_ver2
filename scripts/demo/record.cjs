@@ -67,7 +67,7 @@ fs.mkdirSync(OUT, { recursive: true });
 
   // 1. 오늘 화물부터
   mark("s1");
-  await S(() => window.setCap(1, "오전 10시,<br><em>오늘 화물</em>부터 봅니다", "신항 지연이 번지는지, 내 화물 중<br>무엇이 위험한지 한 화면에"));
+  await S(() => window.setCap(1, "오전 10시,<br><em>오늘 화물</em>부터 봅니다", "신항 지연이 번지는지, 맡은 화물 중<br>무엇이 위험한지 한 화면에"));
   await S(() => window.moveCursor(700, 640));
   await wait(900);
   const chain = await box("#chain");
@@ -108,7 +108,7 @@ fs.mkdirSync(OUT, { recursive: true });
 
   // 4. 기사님 링크
   mark("s4");
-  await S(() => window.setCap(4, "기사님께는<br><em>링크 하나</em>로", "바뀐 출발 시각과 주의사항을 담은 배차 지시,<br>휴대폰에서 바로 확인"));
+  await S(() => window.setCap(4, "기사님께는<br><em>링크 하나</em>로", "운송사 요청에 담긴 기사님 링크로,<br>바뀐 출발 시각과 주의사항을 휴대폰에서 바로 확인"));
   await hl(null);
   await zoom(".brief", 1.6, 10, 470);
   const paper = await box("#paper");
@@ -135,9 +135,9 @@ fs.mkdirSync(OUT, { recursive: true });
   await click("#copy", () => document.getElementById("copy").click());
   await wait(1900);
 
-  // 6. 사내 보고·항만 협의
+  // 6. 사내 보고·선사·터미널 협의
   mark("s6");
-  await S(() => window.setCap(6, "사내 보고와<br><em>항만 협의</em> 자료까지", "같은 계산으로 오늘 전체 브리핑과<br>'무엇을 먼저 풀어야 하나'를 한 번에"));
+  await S(() => window.setCap(6, "사내 보고와<br><em>선사·터미널 협의</em> 자료까지", "같은 계산으로 오늘 전체 브리핑과<br>'무엇을 먼저 풀어야 하나'를 한 번에"));
   await zoom(".brief", 1.6, 10, 470);
   await click('.tab[data-doc="internal"]', () => window.__rdelay.setDoc("internal"));
   await wait(1500);

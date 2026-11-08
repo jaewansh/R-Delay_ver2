@@ -1,15 +1,16 @@
-// R-Delay 배차 브리핑 화면: 상황 띠 → 배차판(시간축 위 오늘 화물) → 브리핑 문서.
-// 판단 규칙은 derive.js, 문서 문장은 briefing.js가 만든다. 여기서는 그리기와 클릭만 다룬다.
-import { statusView, sortedCargo, classifyCargo, cargoView, nodeState, STATE_WORD, trustLines } from "./derive.js?v=20261107a";
-import { SCENARIO_CHIP, clock, clock10, fmtP, fmtRd, fmtDur, asOfText, nextUpdateText, CARGO_SHORT } from "./format.js?v=20261107a";
-import { DOC_KINDS, buildDoc, docToText, docToHTML, driverLink, cargoFacts, DEFAULT_SENDER, josa } from "./briefing.js?v=20261107a";
+// R-Delay 포워더 화물 보드: 상황 띠 → 화물 보드(시간축 위 화주별 오늘 화물) → 브리핑 문서.
+// 쓰는 사람은 중소 포워더 담당자다. 추천 시각은 협력 운송사에 요청하고, 기사님 링크는 포워더·운송사가 보낸다.
+// 판단 규칙은 derive.js, 문서 문장과 문서 이름은 briefing.js가 만든다. 여기서는 그리기와 클릭만 다룬다.
+import { statusView, sortedCargo, classifyCargo, nodeState, STATE_WORD, trustLines } from "./derive.js?v=20261109a";
+import { SCENARIO_CHIP, clock, clock10, fmtP, fmtRd, fmtDur, asOfText, nextUpdateText, CARGO_SHORT } from "./format.js?v=20261109a";
+import { DOC_KINDS, buildDoc, docToText, docToHTML, driverLink, cargoFacts, DEFAULT_SENDER, josa } from "./briefing.js?v=20261109a";
 
 const $ = (id) => document.getElementById(id);
 const HOURS = 20; // 10:00 → 내일 06:00
 const pos = (t) => Math.max(0, Math.min(100, (t / HOURS) * 100));
 const T = (t) => clock(t, false);
 const ORDER = ["base", "terminal_failure", "typhoon_diversion", "holiday_surge", "epidemic", "h2_trucks"];
-const SENDER_KEY = "rdelay-sender";
+const SENDER_KEY = "rdelay2-forwarder-sender"; // 포워더용으로 바꾼 뒤 예전 보내는 사람(배차 담당)이 남지 않게 새 키를 씀
 // 안내문에 넣는 기사님 링크는 받는 사람이 열 수 있는 공개 주소여야 한다(로컬·오프라인 시연 중에도)
 const PUBLIC_BASE = "https://jaewansh.github.io/R-Delay_ver2/";
 const linkBase = () => (/^https?:$/.test(location.protocol) && !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) ? location.href : PUBLIC_BASE);
@@ -32,6 +33,8 @@ const PILL = {
   "hold-uncertain": ["hold", "판단 보류"], optional: ["good", "바꿔도 됨"], ok: ["good", "계획대로"],
 };
 const DEFAULT_DOC = { notify: "shipper", "hold-conservative": "shipper", change: "driver", optional: "driver", ok: "driver", "hold-uncertain": "shipper" };
+// 문서 이름(화주 안내 · 운송사 요청 · 사내 보고 · 선사·터미널 협의)은 briefing.js의 것을 그대로 쓴다
+const DOC_LABEL = Object.fromEntries(DOC_KINDS.map((k) => [k.key, k.label]));
 function riskLevel(p, eps) { return p > eps ? "high" : p > eps / 2 ? "mid" : "low"; }
 function bigP(p) {
   if (p >= 0.995) return ["100", "%"];
@@ -86,7 +89,7 @@ function renderRibbon(r) {
   $("next").textContent = nextUpdateText(r);
 }
 
-// ---------- 배차판 ----------
+// ---------- 화물 보드 ----------
 function renderAxis() {
   const ticks = [];
   for (let t = 0; t <= HOURS; t += 2) {
@@ -97,14 +100,22 @@ function renderAxis() {
   $("axis").innerHTML = ticks.join("");
 }
 
-function rowAction(r, key, f, v) {
-  const { cls, plan, choice, best, verb, c } = f;
-  if (f.changed) return `${T(choice.time)} ${verb}${isH2(choice) ? "(수소)" : ""}로 변경 — 기사님께 알리세요`;
-  if (cls === "change") return v.action;
+// 포워더 담당자에게 하는 말: 시간 변경은 협력 운송사에 요청하고, 마감이 위험하면 화주에게 먼저 알린다
+function changeAsk(f) {
+  const { c, plan, choice } = f;
+  const h2 = isH2(choice) ? "(수소 트럭)" : "";
+  const dir = choice.time < plan.time ? "앞당기도록" : "늦추도록";
+  const to = c.kind === "export" ? josa(`${T(choice.time)} 출발${h2}`, ["으로", "로"]) : `터미널 도착을 ${josa(`${T(choice.time)}${h2}`, ["으로", "로"])}`;
+  return `${to} ${dir} 운송사에 요청하세요`;
+}
+function rowAction(r, f) {
+  const { cls, plan, choice, verb } = f;
+  if (f.changed) return `${josa(`${T(choice.time)} ${verb}${isH2(choice) ? "(수소)" : ""}`, ["으로", "로"])} 변경 — 운송사에 요청을 보내세요`;
+  if (cls === "change") return changeAsk(f);
   if (cls === "notify") return "화주에게 미리 알리세요";
   if (cls === "hold-conservative") return `화주에게 알리고 ${nextUpdateText(r)}에 다시 확인하세요`;
   if (cls === "hold-uncertain") return `계산이 아직 불확실합니다 — ${nextUpdateText(r)}에 다시 확인하세요`;
-  if (cls === "optional") return isH2(choice) ? `수소 트럭으로 바꿀 수 있습니다 (${T(choice.time)} ${verb})` : `${T(choice.time)} ${verb}로 바꿔도 됩니다`;
+  if (cls === "optional") return isH2(choice) ? `운송사에 수소 트럭을 요청할 수 있습니다 (${T(choice.time)} ${verb})` : `${josa(`${T(choice.time)} ${verb}`, ["으로", "로"])} 바꿔도 됩니다`;
   return `계획대로 ${T(plan.time)} ${verb}`;
 }
 function rowTip(r, f) {
@@ -163,7 +174,7 @@ function decisionHTML(f) {
   if (f.changed) {
     const [v, u] = bigP(choice.p_fail);
     risk = `<span class="risk-from">${bigP(plan.p_fail).join("")}</span><span class="risk-v" data-risk="${riskLevel(choice.p_fail, eps)}">${v}<small>${u}</small></span>`;
-    btns = `<button type="button" class="btn" data-act="driver">기사 지시</button><button type="button" class="btn-quiet undo" data-act="undo">되돌리기</button>`;
+    btns = `<button type="button" class="btn" data-act="driver">${esc(DOC_LABEL.driver)}</button><button type="button" class="btn-quiet undo" data-act="undo">되돌리기</button>`;
   } else if (cls === "change" || cls === "optional") {
     const p = cls === "change" ? plan.p_fail : plan.p_fail;
     const [v, u] = bigP(p);
@@ -183,7 +194,7 @@ function decisionHTML(f) {
   } else {
     const [v, u] = bigP(plan.p_fail);
     risk = `<span class="risk-v" data-risk="${riskLevel(plan.p_fail, eps)}">${v}<small>${u}</small></span>`;
-    btns = `<button type="button" class="btn" data-act="driver">기사 지시</button>`;
+    btns = `<button type="button" class="btn" data-act="driver">${esc(DOC_LABEL.driver)}</button>`;
   }
   return `<p class="risk"><span class="risk-l">마감 놓칠 확률</span>${risk}</p>${btns}`;
 }
@@ -193,12 +204,13 @@ function renderBoard(r) {
   if (!state.key || !keys.includes(state.key)) state.key = keys[0];
   $("n").textContent = keys.length;
   const cnt = { critical: 0, warning: 0, good: 0, hold: 0, done: 0 };
+  const shippers = new Set();
   const rows = keys.map((key) => {
-    const v = cargoView(r, key, state.valid);
     const f = cargoFacts(r, key, !!state.applied[key]);
     let [lv, word] = PILL[f.cls];
     if (f.changed) { lv = "done"; word = "변경함"; }
     cnt[lv] += 1;
+    shippers.add(f.meta.shipper);
     const sel = key === state.key;
     const route = `${f.meta.origin} → ${f.meta.dest} · 마감 ${clock(f.c.deadline)}`;
     const tip = rowTip(r, f);
@@ -206,8 +218,9 @@ function renderBoard(r) {
       <div class="row-info">
         <span class="pill" data-level="${lv}"><span class="shape" data-s="${SHAPE[lv] || "dia"}" aria-hidden="true"></span>${word}</span>
         <h3 class="row-name">${esc(CARGO_SHORT[key] || f.c.label)}</h3>
+        <p class="row-shipper"><span>화주</span> ${esc(f.meta.shipper)}</p>
         <p class="row-route">${esc(route)}</p>
-        <p class="row-act">${esc(rowAction(r, key, f, v))}</p>
+        <p class="row-act">${esc(rowAction(r, f))}</p>
         ${tip ? `<p class="row-tip">${esc(tip)}</p>` : ""}
       </div>
       <div class="lane" aria-hidden="true">${laneHTML(f, f.c.epsilon)}</div>
@@ -215,6 +228,7 @@ function renderBoard(r) {
     </li>`;
   });
   $("rows").innerHTML = rows.join("");
+  $("ns").textContent = shippers.size;
   const C = [["critical", "안내 필요"], ["warning", "시간 변경"], ["done", "변경함"], ["hold", "보류"], ["good", "계획대로"]];
   $("counts").innerHTML = C.filter(([k]) => cnt[k]).map(([k, w]) => `<span class="count" data-level="${k === "done" ? "good" : k}">${w} ${cnt[k]}</span>`).join("");
 }

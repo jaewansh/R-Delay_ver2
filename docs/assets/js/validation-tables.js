@@ -44,7 +44,7 @@ function table(tbl, head, rows, numCols = []) {
   return body;
 }
 
-// ---------- 이름(상황판과 같은 화면 이름) ----------
+// ---------- 이름(화물 보드·분석 화면과 같은 화면 이름) ----------
 export const SCENARIO_NAME = {
   base: "평시", terminal_failure: "장비 고장", typhoon_diversion: "태풍 우회 물량",
   holiday_surge: "명절 물량", epidemic: "감염병·결근", h2_trucks: "수소 트럭 배차",

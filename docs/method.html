@@ -8,17 +8,17 @@
   <meta name="theme-color" content="#fcfcfb" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#1a1a19" media="(prefers-color-scheme: dark)">
   <link rel="icon" href="assets/img/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="assets/css/style.css?v=20261107a">
-  <link rel="stylesheet" href="assets/css/method.css?v=20261107a">
+  <link rel="stylesheet" href="assets/css/style.css?v=20261109a">
+  <link rel="stylesheet" href="assets/css/method.css?v=20261109a">
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-  <script type="module" src="assets/js/method.js?v=20261107a"></script>
+  <script type="module" src="assets/js/method.js?v=20261109a"></script>
 </head>
 <body class="m-page">
 <a class="m-skip" href="#main">본문으로 건너뛰기</a>
 
 <header class="m-top">
   <div class="m-top-in">
-    <a class="m-back" href="index.html">← 상황판으로</a>
+    <a class="m-back" href="index.html">← 화물 보드로</a>
     <div class="m-title-row">
       <h1>R-Delay 작동 원리·검증</h1>
       <details class="m-about" id="about">
@@ -28,7 +28,7 @@
         </div>
       </details>
     </div>
-    <p class="m-notice">이 페이지의 검증 표는 기본 조건으로 만든 합성 세계 결과입니다. 실제 공개 자료로 되돌려 본 결과는 <a href="https://github.com/jaewansh/R-Delay_ver2/blob/main/REPORT.md#검증-실제-공개-자료-백테스트">기술 보고서(REPORT.md)</a>에 따로 있습니다. 상황판에서 조건을 바꿔 다시 계산한 값은 상황판의 '자세히 보기'에서 보세요.</p>
+    <p class="m-notice">이 페이지의 검증 표는 기본 조건으로 만든 합성 세계 결과입니다. 실제 공개 자료로 되돌려 본 결과는 <a href="https://github.com/jaewansh/R-Delay_ver2/blob/main/REPORT.md#검증-실제-공개-자료-백테스트">기술 보고서(REPORT.md)</a>에 따로 있습니다. 분석 화면에서 조건을 바꿔 다시 계산한 값은 분석 화면의 '자세히 보기'에서 보세요.</p>
   </div>
 </header>
 
@@ -46,7 +46,7 @@
       <li><a href="#sources">선행연구와 출처</a></li>
     </ol>
     <p class="m-toc-back"><a href="https://github.com/jaewansh/R-Delay_ver2/blob/main/REPORT.md#검증-실제-공개-자료-백테스트">실자료 검증 결과(기술 보고서) →</a></p>
-    <p class="m-toc-back"><a href="index.html">← 상황판으로</a></p>
+    <p class="m-toc-back"><a href="index.html">← 화물 보드로</a></p>
   </nav>
 
   <details class="m-toc m-toc-mobile" id="toc-mobile">
@@ -119,7 +119,7 @@
     <!-- 3 -->
     <section id="rules" aria-labelledby="rules-h">
       <h2 id="rules-h"><span class="m-no">3</span>판단 규칙</h2>
-      <p class="m-plain">엔진이 경보, 원인, 배차를 정하는 규칙입니다. 상황판의 문장은 모두 이 규칙의 결과를 옮긴 것입니다.</p>
+      <p class="m-plain">엔진이 경보, 원인, 배차를 정하는 규칙입니다. 화면의 문장은 모두 이 규칙의 결과를 옮긴 것입니다.</p>
 
       <h3>경보와 원인 판정</h3>
       <p>요인을 하나씩 평시 값으로 되돌린 반사실 R<sub>d</sub>입니다. 먼저 확산 확률 P(R<sub>d</sub>&gt;1)이 35~65%면 ‘확산 경계’로 두고 원인을 단정하지 않습니다(경보는 50% 기준). 확산이 확실하면, 확산 중인 경우만 놓고 물량 보정을 지웠을 때 연쇄가 멈추면 ‘물량 주도형’, 그래도 이어지면 ‘처리능력형(물량 외 요인: 처리능력·기상·장비)’, 그 확률이 35~65%면 ‘원인 보류’입니다. 여러 요인이 각각 혼자서도 연쇄를 멈추면 ‘복합’으로 함께 적습니다.</p>
@@ -137,14 +137,14 @@
       <p>신규 지연 건수 y(음이항)와 현재 지연 표본 h/n(베타-이항)이 들어올 때마다 입자 가중치를 갱신합니다. 유효 입자 수(ESS)가 절반 아래로 떨어지면 재표본추출합니다.</p>
 
       <h3>기사님 안내(터미널 반출 소요)</h3>
-      <p>화물이 준비된 상태에서 가상 자동화 터미널 A에 도착했을 때 게이트·야드 처리를 마칠 때까지 걸리는 시간의 중앙값과 80% 구간입니다. 공지된 처리능력(선석·장비·출근율)을 반영합니다. 수입 화물은 컨테이너 반출 가능 시각(아래 문구와 배차 판단 카드) 이후에 도착해야 이 시간이 적용됩니다.</p>
+      <p>화물이 준비된 상태에서 가상 터미널 A에 도착했을 때 게이트·야드 처리를 마칠 때까지 걸리는 시간의 중앙값과 80% 구간입니다. 공지된 처리능력(선석·장비·출근율)을 반영합니다. 수입 화물은 컨테이너 반출 가능 시각(아래 문구와 배차 판단 카드) 이후에 도착해야 이 시간이 적용됩니다.</p>
       <p class="m-sub"><span class="m-label">보정 계획</span>게이트·도로와 터미널 야드의 예측 지연 비율과 공지된 처리능력으로 계산한 값이며, 실증에서는 VBS 예약·게이트 반출입 기록으로 보정합니다.</p>
     </section>
 
     <!-- 4 -->
     <section id="display-rules" aria-labelledby="display-rules-h">
       <h2 id="display-rules-h"><span class="m-no">4</span>화면 문구 규칙</h2>
-      <p>상황판은 엔진이 낸 숫자를 그대로 늘어놓지 않고, 아래 규칙으로 문장과 표시를 만듭니다. 계산 결과는 바꾸지 않고 읽기 쉬운 말로만 옮깁니다.</p>
+      <p>분석 화면은 엔진이 낸 숫자를 그대로 늘어놓지 않고, 아래 규칙으로 문장과 표시를 만듭니다. 계산 결과는 바꾸지 않고 읽기 쉬운 말로만 옮깁니다.</p>
       <p class="m-callout"><b>이 규칙들은 엔진이 검증한 출력이 아니라 화면 표시 방식입니다.</b> 아래 5절의 검증 수치는 엔진 출력에 대한 것입니다.</p>
 
       <h3>쓰는 말</h3>
@@ -207,7 +207,7 @@
       <p>화물마다 엔진의 배차 판단을 아래 여섯 가지 중 하나로 나눕니다. 허용 위험과 비교할 때는 오차 감안 값을 씁니다. 카드는 이 순서로 놓고, 화주 안내 필요 카드끼리는 놓칠 확률이 큰 순서로 놓습니다.</p>
       <dl class="m-class-list">
         <dt><span class="m-pill" data-level="warning"><span class="m-shape" data-level="warning" aria-hidden="true"></span>시간 변경 권장</span></dt>
-        <dd>추천안이 지금 계획과 다르고, 지금 계획의 오차 감안 값이 허용 위험을 넘을 때입니다. 「{시각} 출발로 앞당기세요」 또는 「터미널 도착을 {시각}으로 앞당기세요」처럼 씁니다. 근거는 지금 계획의 놓칠 확률이 허용 위험을 넘으면 「지금 계획({시각} {출발/도착})대로면 놓칠 확률 {p} → 바꾸면 {p′}」, 놓칠 확률은 허용 위험 안인데 오차 감안 값만 넘으면 「지금 계획은 오차를 감안하면 {값}로 허용 위험 {ε}를 넘을 수 있음 → {시각}이면 {값′} 이내」입니다. 그 상황의 가상 시험에서 추천대로 바꿔도 놓친 비율이 줄지 않았으면 회색 한 줄 「가상 시험에서는 바꿔도 놓친 비율이 같았습니다({a}→{b})」를 덧붙입니다.</dd>
+        <dd>추천안이 지금 계획과 다르고, 지금 계획의 오차 감안 값이 허용 위험을 넘을 때입니다. 포워더는 차량을 직접 몰지 않으므로 「{시각} 출발로 앞당기도록 운송사에 요청하세요」 또는 「터미널 도착을 {시각}으로 앞당기도록 운송사에 요청하세요」처럼 씁니다. 근거는 지금 계획의 놓칠 확률이 허용 위험을 넘으면 「지금 계획({시각} {출발/도착})대로면 놓칠 확률 {p} → 바꾸면 {p′}」, 놓칠 확률은 허용 위험 안인데 오차 감안 값만 넘으면 「지금 계획은 오차를 감안하면 {값}로 허용 위험 {ε}를 넘을 수 있음 → {시각}이면 {값′} 이내」입니다. 그 상황의 가상 시험에서 추천대로 바꿔도 놓친 비율이 줄지 않았으면 회색 한 줄 「가상 시험에서는 바꿔도 놓친 비율이 같았습니다({a}→{b})」를 덧붙입니다.</dd>
         <dt><span class="m-pill" data-level="critical"><span class="m-shape" data-level="critical" aria-hidden="true"></span>화주 안내 필요</span></dt>
         <dd>어떤 배차안도 허용 위험을 맞출 수 없을 때입니다. 가장 나은 안도 놓칠 확률이 50% 이상이면 「어느 시각에 가도 절반 넘게 놓칠 전망 — 화주에게 미리 알리세요」, 아니면 「어느 시각에 가도 놓칠 확률이 허용 위험 {ε}를 넘습니다(가장 낮아도 {p}) — 화주에게 가능성을 미리 알리세요」라고 씁니다. 컨테이너 반출이 병목이고 지금 계획의 위험도 가장 나은 안과 같으면 근거로 「컨테이너가 {시각}쯤 나와서 더 일찍 가도 위험이 같습니다」를, 아니면 「가장 나은 안: {시각} · 놓칠 확률 {p}(지금 계획 {시각}이면 {p})」를 씁니다. 우선 하역 요청 정보는 펼친 카드에만 둡니다.</dd>
         <dt><span class="m-pill" data-level="hold"><span class="m-shape" data-level="hold" aria-hidden="true"></span>기준 근처 · 다시 확인</span></dt>
@@ -266,7 +266,7 @@
         <dt>비용</dt><dd>1만 원 이상은 「약 N만 원」, 1천 원 이상은 「약 N천 원」으로 씁니다.</dd>
         <dt>지수·배수</dt><dd>번짐 지수는 소수 2자리, 물동량은 「평소의 N배」(소수 1자리), 처리능력은 「평소의 N%」입니다.</dd>
         <dt>판단 경계</dt><dd>지금 번지는 중일 확률이 35~65%이면 회색 「판단 경계」 표시를 붙이고 원인 판정을 미룹니다. 경보 자체는 50%를 기준으로 냅니다.</dd>
-        <dt>기호</dt><dd>상황판 첫 화면에는 R<sub>d</sub>, ε, p̂, ξ, ESS 같은 기호를 쓰지 않습니다. 기호는 이 페이지와 상황판의 「자세히 보기」에서만 씁니다.</dd>
+        <dt>기호</dt><dd>화물 보드·분석 화면 첫 화면에는 R<sub>d</sub>, ε, p̂, ξ, ESS 같은 기호를 쓰지 않습니다. 기호는 이 페이지와 분석 화면의 「자세히 보기」에서만 씁니다.</dd>
       </dl>
     </section>
 
@@ -321,7 +321,7 @@
 
       <h3>자료와 검증 조건</h3>
       <ul class="m-limits">
-        <li><b>상황판은 합성 데이터입니다.</b> 화면은 실데이터와 연결하지 않았고, 5절 검증은 계산 엔진이 가상 세계의 구조와 고정 모수를 아는 조건에서 했습니다.</li>
+        <li><b>화물 보드·분석 화면·기사님 화면은 합성 데이터입니다.</b> 화면은 실데이터와 연결하지 않았고, 5절 검증은 계산 엔진이 가상 세계의 구조와 고정 모수를 아는 조건에서 했습니다.</li>
         <li><b>실제 공개 자료에서는 지금 정박지 대기만 보는 단순 기준과 차이가 없었습니다.</b> 공개 실자료 후향 검증(실시간 운영 검증 아님)에서 R-Delay 점수는 기후값보다는 확실히 나았습니다. 경보가 울리면 맞을 확률(경보 비율 10%에서 정밀도)은 0.55로 비교한 모형 중 가장 높았지만, 대기 에피소드 81개 중 63개는 시작 전 72시간 안에 경보가 없었습니다. 스케줄 기준선에 R-Delay 상태를 더하면 조금 나아졌습니다(PR-AUC 차이 95% 구간 +0.003~+0.066). 앱의 확산 경보 P(R<sub>d</sub>&gt;1) ≥ 0.5는 실자료에서 한 번도 울리지 않았습니다(평가 기간 R<sub>d</sub> 중앙값 0.22, 최대 0.35, P(R<sub>d</sub>&gt;1) 최대 0.0019). 자세한 결과는 <a href="https://github.com/jaewansh/R-Delay_ver2/blob/main/REPORT.md#검증-실제-공개-자료-백테스트">기술 보고서(REPORT.md)</a>에 있습니다.</li>
         <li><b>기준 전파율을 틀리게 주면 크게 흔들립니다.</b> 기준 전파율을 0.7배로 잘못 주면 장비 고장 장면 20개 세계 중 7개에서 번짐 경보를 놓쳤습니다. 1.3배로 주면 다른 장면에서 헛경보가 늘었습니다(표 3).</li>
       </ul>
@@ -408,8 +408,8 @@
 <footer class="m-foot">
   <div class="m-foot-in">
     <p>R-Delay · 2026 동남권 멀티도메인 모빌리티 비즈니스 해커톤(개인부문) 출품작 · MIT License · <a href="https://github.com/jaewansh/R-Delay_ver2">GitHub</a></p>
-    <p>의사결정 지원용 시연입니다. 배차·통보의 최종 판단과 책임은 사용자에게 있으며, 원인 판정은 모형상 배분으로 책임 소재 판단에 쓰지 않습니다.</p>
-    <p><a href="index.html">← 상황판으로</a> · <a href="#main">맨 위로 ↑</a></p>
+    <p>의사결정 지원용 시연입니다. 운송사 요청·화주 안내의 최종 판단과 책임은 사용자(포워더 담당자)에게 있으며, 원인 판정은 모형상 배분으로 책임 소재 판단에 쓰지 않습니다.</p>
+    <p><a href="index.html">← 화물 보드로</a> · <a href="#main">맨 위로 ↑</a></p>
   </div>
 </footer>
 <noscript><p class="m-error">검증 표는 JavaScript가 필요합니다. 수식은 TeX 원문으로 보입니다.</p></noscript>
